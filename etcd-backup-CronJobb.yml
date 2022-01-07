@@ -24,6 +24,8 @@ spec:
             image: rancher/coreos-etcd:v3.4.3-rancher1
             imagePullPolicy: IfNotPresent
             env: 
+            - name: cluster
+              value: Dev
             - name: HOSTIP
               valueFrom: 
                 fieldRef: 
@@ -36,7 +38,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - export DATAREF=`date +"%Y-%m-%d"`; etcdctl snapshot save /bkp/ETCD/DB/etcd-snapshot-$DATAREF.db --endpoints=https://$$HOSTIP:2379  --cacert=/ssl/kube-ca.pem  --cert=/ssl/kube-node.pem  --key=/ssl/kube-node-key.pem; find /bkp/ETCD/DB/* -daystart -mtime +2 -delete
+            - export DATAREF=`date +"%Y-%m-%d"`; etcdctl snapshot save /bkp/ETCD/$cluster/DB/etcd-snapshot-$DATAREF.db --endpoints=https://$$HOSTIP:2379  --cacert=/ssl/kube-ca.pem  --cert=/ssl/kube-node.pem  --key=/ssl/kube-node-key.pem; find /bkp/ETCD/$cluster/DB/* -daystart -mtime +2 -delete
           restartPolicy: OnFailure
           volumes: 
           - name: certs
@@ -46,4 +48,3 @@ spec:
           - name: bkp
             persistentVolumeClaim: 
               claimName: backup-nfs-claim
-
