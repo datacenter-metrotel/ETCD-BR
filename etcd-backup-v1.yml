@@ -11,6 +11,7 @@ metadata:
         f:failedJobsHistoryLimit: {}
         f:jobTemplate:
           f:spec:
+            f:backoffLimit: {}
             f:template:
               f:spec:
                 f:affinity:
@@ -76,12 +77,13 @@ metadata:
                       f:path: {}
                       f:type: {}
                     f:name: {}
+            f:ttlSecondsAfterFinished: {}
         f:schedule: {}
         f:successfulJobsHistoryLimit: {}
         f:suspend: {}
     manager: agent
     operation: Update
-    time: "2022-04-21T00:42:51Z"
+    time: "2022-04-21T01:11:34Z"
   name: etcd-backup-v1
   namespace: backup-etcd
 spec:
@@ -91,6 +93,7 @@ spec:
     metadata:
       creationTimestamp: null
     spec:
+      backoffLimit: 3
       template:
         metadata:
           creationTimestamp: null
@@ -152,6 +155,7 @@ spec:
           - name: bkp
             persistentVolumeClaim:
               claimName: nfs-backup-etcd
+      ttlSecondsAfterFinished: 432000
   schedule: 01 00 * * *
   successfulJobsHistoryLimit: 3
   suspend: false
