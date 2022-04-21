@@ -1,0 +1,158 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  creationTimestamp: "2022-04-21T00:42:51Z"
+  managedFields:
+  - apiVersion: batch/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:spec:
+        f:concurrencyPolicy: {}
+        f:failedJobsHistoryLimit: {}
+        f:jobTemplate:
+          f:spec:
+            f:template:
+              f:spec:
+                f:affinity:
+                  .: {}
+                  f:nodeAffinity:
+                    .: {}
+                    f:requiredDuringSchedulingIgnoredDuringExecution:
+                      .: {}
+                      f:nodeSelectorTerms: {}
+                f:containers:
+                  k:{"name":"etcdctl"}:
+                    .: {}
+                    f:command: {}
+                    f:env:
+                      .: {}
+                      k:{"name":"HOSTIP"}:
+                        .: {}
+                        f:name: {}
+                        f:valueFrom:
+                          .: {}
+                          f:fieldRef:
+                            .: {}
+                            f:apiVersion: {}
+                            f:fieldPath: {}
+                      k:{"name":"cluster"}:
+                        .: {}
+                        f:name: {}
+                        f:value: {}
+                    f:image: {}
+                    f:imagePullPolicy: {}
+                    f:name: {}
+                    f:resources: {}
+                    f:terminationMessagePath: {}
+                    f:terminationMessagePolicy: {}
+                    f:volumeMounts:
+                      .: {}
+                      k:{"mountPath":"/bkp"}:
+                        .: {}
+                        f:mountPath: {}
+                        f:name: {}
+                      k:{"mountPath":"/ssl"}:
+                        .: {}
+                        f:mountPath: {}
+                        f:name: {}
+                f:dnsPolicy: {}
+                f:restartPolicy: {}
+                f:schedulerName: {}
+                f:securityContext: {}
+                f:terminationGracePeriodSeconds: {}
+                f:tolerations: {}
+                f:volumes:
+                  .: {}
+                  k:{"name":"bkp"}:
+                    .: {}
+                    f:name: {}
+                    f:persistentVolumeClaim:
+                      .: {}
+                      f:claimName: {}
+                  k:{"name":"certs"}:
+                    .: {}
+                    f:hostPath:
+                      .: {}
+                      f:path: {}
+                      f:type: {}
+                    f:name: {}
+        f:schedule: {}
+        f:successfulJobsHistoryLimit: {}
+        f:suspend: {}
+    manager: agent
+    operation: Update
+    time: "2022-04-21T00:42:51Z"
+  name: etcd-backup-v1
+  namespace: backup-etcd
+spec:
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: node-role.kubernetes.io/etcd
+                    operator: In
+                    values:
+                    - "true"
+          containers:
+          - command:
+            - /bin/sh
+            - -c
+            - export DATAREF=`date +"%Y-%m-%d"`; etcdctl snapshot save /bkp/etcd-snapshot-$DATAREF.db
+              --endpoints=https://$$HOSTIP:2379  --cacert=/ssl/kube-ca.pem  --cert=/ssl/kube-node.pem  --key=/ssl/kube-node-key.pem;
+              find /bkp/* -daystart -mtime +2 -delete
+            env:
+            - name: cluster
+              value: Dev
+            - name: HOSTIP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.hostIP
+            image: rancher/mirrored-coreos-etcd:v3.4.16-rancher1
+            imagePullPolicy: IfNotPresent
+            name: etcdctl
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /ssl
+              name: certs
+            - mountPath: /bkp
+              name: bkp
+          dnsPolicy: ClusterFirst
+          restartPolicy: OnFailure
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          tolerations:
+          - effect: NoSchedule
+            key: node-role.kubernetes.io/controlplane
+            operator: Equal
+            value: "true"
+          - effect: NoExecute
+            key: node-role.kubernetes.io/etcd
+            operator: Equal
+            value: "true"
+          volumes:
+          - hostPath:
+              path: /etc/kubernetes/ssl
+              type: Directory
+            name: certs
+          - name: bkp
+            persistentVolumeClaim:
+              claimName: nfs-backup-etcd
+  schedule: 01 00 * * *
+  successfulJobsHistoryLimit: 3
+  suspend: false
+status: {}
